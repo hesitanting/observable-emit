@@ -8,7 +8,7 @@ const env = require('yargs').argv.env // use --env with webpack 2
 let libraryName = 'Observable'
 
 const resolve = (dir) => {
-  return path.join(__dirname, '..', dir)
+  return path.join(__dirname, './', dir)
 }
 
 let plugins = [
@@ -53,9 +53,8 @@ const config = {
       },
       {
         test: /(\.js)$/,
-        enforce: 'pre',
         loader: 'babel-loader',
-        include: [resolve('src'), resolve('test')],
+        include: [resolve('src'), resolve('test')]
       }
     ]
   },

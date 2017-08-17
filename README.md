@@ -1,4 +1,6 @@
-# 观察者模式，定义对象间的一种一对多的依赖关系，当一个对象的状态发生改变时，所有依赖于它的对象都将得到通知。包含订阅，分发，取消订阅。
+# 观察者模式
+
+> 定义对象间的一种一对多的依赖关系，当一个对象的状态发生改变时，所有依赖于它的对象都将得到通知。包含订阅，分发，取消订阅。
 
 [![Build Status](https://www.travis-ci.org/sakitam-fdd/observable-emit.svg?branch=master)](https://www.travis-ci.org/sakitam-fdd/observable-emit)
 [![NPM](https://nodei.co/npm/observable-emit.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/observable-emit/)
@@ -98,3 +100,7 @@ emiter.clear()
 | key | type | desc |
 | :--- | :--- | :---------- |
 | `eventName` | `string` | 事件名称 |
+
+### clear()
+
+> 取消所有订阅

@@ -1,6 +1,6 @@
 {
   "name": "observable-emit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "javascript emit events",
   "main": "src/index.js",
   "scripts": {

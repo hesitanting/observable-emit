@@ -19,8 +19,8 @@ npm run build
 ### CDN
 
 ```bash
-https://unpkg.com/observable-emit@1.0.0/dist/Observable.min.js
-https://unpkg.com/observable-emit@1.0.0/dist/Observable.js
+https://unpkg.com/observable-emit@1.0.1/dist/Observable.min.js
+https://unpkg.com/observable-emit@1.0.1/dist/Observable.js
 ```
 
 ### NPM

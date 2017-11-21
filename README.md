@@ -3,7 +3,11 @@
 > 定义对象间的一种一对多的依赖关系，当一个对象的状态发生改变时，所有依赖于它的对象都将得到通知。包含订阅，分发，取消订阅。
 
 [![Build Status](https://www.travis-ci.org/sakitam-fdd/observable-emit.svg?branch=master)](https://www.travis-ci.org/sakitam-fdd/observable-emit)
-[![NPM](https://nodei.co/npm/observable-emit.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/observable-emit/)
+[![NPM downloads](https://img.shields.io/npm/dm/observable-emit.svg)](https://npmjs.org/package/observable-emit)
+![JS gzip size](http://img.badgesize.io/https://unpkg.com/observable-emit/dist/observable.js?compression=gzip&label=gzip%20size:%20JS)
+[![Npm package](https://img.shields.io/npm/v/observable-emit.svg)](https://www.npmjs.org/package/observable-emit)
+[![GitHub stars](https://img.shields.io/github/stars/sakitam-fdd/observable-emit.svg)](https://github.com/sakitam-fdd/observable-emit/stargazers)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/sakitam-fdd/observable-emit/master/LICENSE)
 
 ## GetCode
 

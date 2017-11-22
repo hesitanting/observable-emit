@@ -24,11 +24,10 @@ Observable.prototype.on = function (eventName, callback, context) {
  * @returns {boolean}
  */
 Observable.prototype.un = function (event) {
-  var eventName = ''
-  var key = ''
-  var r = false
-  var type = typeof event
-  var that = this
+  let eventName = ''
+  let key = ''
+  let r = false
+  let type = typeof event
   if (type === 'string') {
     if (Observable.hasOwnKey(this.Events, event)) {
       delete this.Events[event]
@@ -44,10 +43,10 @@ Observable.prototype.un = function (event) {
     }
     return false
   } else if (type === 'function') {
-    that.eachEvent(that.Events, function (keyA, itemA) {
-      that.eachEvent(itemA, function (keyB, itemB) {
+    this.eachEvent(this.Events, (keyA, itemA) => {
+      this.eachEvent(itemA, (keyB, itemB) => {
         if (itemB[0] === event) {
-          delete that.Events[keyA][keyB]
+          delete this.Events[keyA][keyB]
           r = true
         }
       })
@@ -75,7 +74,7 @@ Observable.prototype.once = function (eventName, callback, context) {
  */
 Observable.prototype.action = function (eventName, args) {
   if (Observable.hasOwnKey(this.Events, eventName)) {
-    this.eachEvent(this.Events[eventName], function (key, item) {
+    this.eachEvent(this.Events[eventName], (key, item) => {
       item[0].apply(item[2], args)
       if (item[1]) {
         delete this.Events[eventName][key]
@@ -85,23 +84,24 @@ Observable.prototype.action = function (eventName, args) {
 }
 
 /**
- * 实时触发响应
- * @param eventName
- */
-Observable.prototype.dispatch = function (eventName) {
-  var that = this
-  var args = Observable.slice(arguments, 1)
-  setTimeout(function () {
-    that.action(eventName, args)
-  })
-}
-
-/**
  * 延后触发响应
  * @param eventName
  */
 Observable.prototype.dispatchSync = function (eventName) {
+  const args = Observable.slice(arguments, 1)
+  setTimeout(() => {
+    this.action(eventName, args)
+  })
+  return this
+}
+
+/**
+ * 实时触发响应
+ * @param eventName
+ */
+Observable.prototype.dispatch = function (eventName) {
   this.action(eventName, Observable.slice(arguments, 1))
+  return this
 }
 
 /**
@@ -136,7 +136,7 @@ Observable.prototype.bindEvent = function (eventName, callback, isOne, context) 
  * @param callback
  */
 Observable.prototype.eachEvent = function (obj, callback) {
-  for (var key in obj) {
+  for (let key in obj) {
     if (Observable.hasOwnKey(obj, key)) {
       callback(key, obj[key])
     }

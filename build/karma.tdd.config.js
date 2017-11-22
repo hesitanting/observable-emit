@@ -3,33 +3,13 @@
  * @desc 测试驱动开发
  */
 
-const base = {
-  frameworks: ['mocha', 'expect', 'sinon', 'happen'],
-  basePath: '..',
-  files: [
-    'dist/observable.js',
-    'test/**/*.js'
-  ],
-  proxies: {
-  },
-  preprocessors: {
-    'test/index.js': ['babel']
-  },
-  customLaunchers: {
-    IE10: {
-      base: 'IE',
-      'x-ua-compatible': 'IE=EmulateIE10'
-    },
-    IE9: {
-      base: 'IE',
-      'x-ua-compatible': 'IE=EmulateIE9'
-    }
-  }
-}
+const base = require('./karma.base.config.js')
 
 module.exports = function (config) {
   config.set(Object.assign(base, {
     browsers: ['Chrome'],
-    reporters: ['mocha']
+    logLevel: config.LOG_INFO,
+    reporters: ['mocha'],
+    singleRun: true
   }))
 }

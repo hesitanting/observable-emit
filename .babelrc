@@ -2,7 +2,11 @@
   "presets": [
     ["es2015", { "loose": true, "modules": false }]
   ],
-  "plugins": ["external-helpers"],
+  "plugins": [
+    "external-helpers",
+    "transform-proto-to-assign",
+    "syntax-dynamic-import"
+  ],
   "ignore": [
     "dist/*.js"
   ],

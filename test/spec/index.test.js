@@ -1,6 +1,6 @@
 /* eslint-env es6 */
 describe('indexSpec', () => {
-  it('on and un', function () {
+  it('on', function () {
     let num = 0
     const event = new Observable();
     event.on('target', () => {
@@ -10,7 +10,17 @@ describe('indexSpec', () => {
     event.dispatch('target')
   });
 
-  it('fire', function () {
+  it('addEventListener', function () {
+    let num = 0
+    const event = new Observable();
+    event.addEventListener('target', () => {
+      num++
+      expect(num).to.be.eql(1);
+    })
+    event.dispatch('target')
+  });
+
+  it('dispatch', function () {
     let num = 0
     const event = new Observable();
     event.on('target', () => {
@@ -50,7 +60,7 @@ describe('indexSpec', () => {
     expect(counter).to.be.eql(0);
   });
 
-  it('clear', function () {
+  it('un', function () {
     let counter = 0;
     const event = new Observable();
     function listener() {
@@ -59,7 +69,21 @@ describe('indexSpec', () => {
     }
     event.once('click', listener, event);
     event.on('click', listener, event);
-    event.clear();
+    event.un();
+    event.dispatch('click').dispatch('click');
+    expect(counter).to.be.eql(0);
+  });
+
+  it('removeEventListener', function () {
+    let counter = 0;
+    const event = new Observable();
+    function listener() {
+      counter++;
+      expect(this).to.be.eql(event);
+    }
+    event.once('click', listener, event);
+    event.on('click', listener, event);
+    event.removeEventListener();
     event.dispatch('click').dispatch('click');
     expect(counter).to.be.eql(0);
   });

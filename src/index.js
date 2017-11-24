@@ -8,17 +8,6 @@ const _trim = str => {
   return str.trim ? str.trim() : str.replace(/^\s+|\s+$/g, '')
 }
 
-const _bind = (fn, obj) => {
-  let slice = Array.prototype.slice
-  if (fn.bind) {
-    return fn.bind.apply(fn, slice.call(arguments, 1))
-  }
-  let args = slice.call(arguments, 2)
-  return function () {
-    return fn.apply(obj, args.length ? args.concat(slice.call(arguments)) : arguments)
-  }
-}
-
 /**
  * Merges the properties of sources into destination object.
  * @param  {Object} dest   - object to extend
@@ -119,9 +108,9 @@ class Observable {
       }
       return this
     }
-    let handler = _bind(function () {
+    let handler = () => {
       this.un(events, callback, context).un(events, handler, context)
-    }, this)
+    }
     // add a listener that's executed once and removed after that
     return this.on(events, callback, context).on(events, handler, context)
   }
@@ -279,7 +268,7 @@ class Observable {
    */
   addEventParent (obj) {
     this._eventParents = this._eventParents || {}
-    this._eventParents[uuidv5(obj, 'event-parents')] = obj
+    this._eventParents[uuidv5(obj, '8dc079dd-0313-4563-864f-008eb45bf87f')] = obj
     return this
   }
 
@@ -290,7 +279,7 @@ class Observable {
    */
   removeEventParent (obj) {
     if (this._eventParents) {
-      delete this._eventParents[uuidv5(obj, 'event-parents')]
+      delete this._eventParents[uuidv5(obj, '8dc079dd-0313-4563-864f-008eb45bf87f')]
     }
     return this
   }

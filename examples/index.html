@@ -17,7 +17,7 @@
   }
 
   function addListener () {
-    Listener.on('test', handle)
+    Listener.once('test', handle)
   }
   function reListener () {
     Listener.un('test', handle)
@@ -25,7 +25,9 @@
   function actionListener () {
     Listener.dispatch('test', {
       name: 11
-    })
+    });
+    Listener.addEventParent('1')
+    Listener.removeEventParent('1')
   }
 </script>
 </body>

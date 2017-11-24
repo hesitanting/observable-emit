@@ -16,6 +16,8 @@ git clone https://github.com/sakitam-fdd/observable-emit.git
 npm install
 npm run dev
 npm run build
+npm run karma.test
+npm run karma.cover
 ```
 
 ## Use
@@ -23,8 +25,8 @@ npm run build
 ### CDN
 
 ```bash
-https://unpkg.com/observable-emit@1.0.1/dist/Observable.min.js
-https://unpkg.com/observable-emit@1.0.1/dist/Observable.js
+https://unpkg.com/observable-emit@1.1.1/dist/Observable.min.js
+https://unpkg.com/observable-emit@1.1.1/dist/Observable.js
 ```
 
 ### NPM
@@ -37,31 +39,29 @@ import Observable from 'observable-emit'
 
 ```javascript
   var emiter = new Observable()
-  emiter.on('event1', function(event) {
-    console.log(event)
+  emiter.on('event1', function(event, data) {
+    console.log(event, data)
   })
   // 触发一次取消订阅
-  emiter.once('event1', function(event) {
-    console.log(event)
+  emiter.once('event1', function(event, data) {
+    console.log(event, data)
   })
-  emiter.on('event2', function(event) {
-    console.log(event)
+  emiter.on('event2', function(event, data) {
+    console.log(event, data)
   })
   
   emiter.dispatch('event1', 'one')
   emiter.dispatchSync('event2', 'two')
 // one
 
-// 取消订阅
+// 取消订阅, 不传时默认取消所有
 emiter.un('event1')
-
-// 取消所有订阅
-emiter.clear()
 ```
 
 ## Methods
 
 ### on(eventName, callback, context)
+### addEventListener(eventName, callback, context) -- alias
 
 > 订阅事件
 
@@ -69,7 +69,7 @@ emiter.clear()
 
 | key | type | desc |
 | :--- | :--- | :---------- |
-| `eventName` | `string` | 事件名称 |
+| `eventName` | `string` or `Object` | 事件名称, 可以使用空格分开订阅多个事件，也可以使用对象例如dom对象 |
 | `callback` | `function` | 回调函数 |
 | `context` | `function` | 上下文 |
 
@@ -81,8 +81,21 @@ emiter.clear()
 
 | key | type | desc |
 | :--- | :--- | :---------- |
-| `eventName` | `string` | 事件名称 |
+| `eventName` | `string` or `Object` | 事件名称, 可以使用空格分开订阅多个事件，也可以使用对象例如dom对象 |
 | `callback` | `function` | 回调函数 |
+| `context` | `function` | 上下文 |
+
+### un(eventName, callback, context)
+### removeEventListener(eventName, callback, context) -- alias
+
+> 取消订阅，无参数时默认取消所有事件订阅
+
+###### Parameters:
+
+| key | type | desc |
+| :--- | :--- | :---------- |
+| `eventName` | `string` or `Object` | 事件名称, 可以使用空格分开订阅多个事件，也可以使用对象例如dom对象 |
+| `callback` | `function` | 订阅函数 |
 | `context` | `function` | 上下文 |
 
 ### dispatch(eventName, ...)
@@ -105,6 +118,3 @@ emiter.clear()
 | :--- | :--- | :---------- |
 | `eventName` | `string` | 事件名称 |
 
-### clear()
-
-> 取消所有订阅

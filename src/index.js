@@ -1,144 +1,295 @@
-const Observable = function () {
-  this.Events = {}
-  this.__cnt = 0
-}
-
-Observable.hasOwnKey = Function.call.bind(Object.hasOwnProperty)
-
-Observable.slice = Function.call.bind(Array.prototype.slice)
-
 /**
- * 事件分发
- * @param eventName
- * @param callback
- * @param context
- * @returns {(*|*)[]}
+ * Created by FDD on 2017/11/24.
+ * @desc input
  */
-Observable.prototype.on = function (eventName, callback, context) {
-  return (this.bindEvent(eventName, callback, 0, context))
+import uuidv5 from 'uuid/v5'
+
+const _trim = str => {
+  return str.trim ? str.trim() : str.replace(/^\s+|\s+$/g, '')
 }
 
 /**
- * 取消监听
- * @param event
- * @returns {boolean}
+ * Merges the properties of sources into destination object.
+ * @param  {Object} dest   - object to extend
+ * @param  {...Object} src - sources
+ * @return {Object}
+ * @memberOf Util
  */
-Observable.prototype.un = function (event) {
-  let eventName = ''
-  let key = ''
-  let r = false
-  let type = typeof event
-  if (type === 'string') {
-    if (Observable.hasOwnKey(this.Events, event)) {
-      delete this.Events[event]
-      return true
+const _extend = function (dest) { // (Object[, Object, ...]) ->
+  for (let i = 1; i < arguments.length; i++) {
+    const src = arguments[i]
+    for (const k in src) {
+      dest[k] = src[k]
     }
-    return false
-  } else if (type === 'object') {
-    eventName = event[0]
-    key = event[1]
-    if (Observable.hasOwnKey(this.Events, eventName) && Observable.hasOwnKey(this.Events[eventName], key)) {
-      delete this.Events[eventName][key]
-      return true
-    }
-    return false
-  } else if (type === 'function') {
-    this.eachEvent(this.Events, (keyA, itemA) => {
-      this.eachEvent(itemA, (keyB, itemB) => {
-        if (itemB[0] === event) {
-          delete this.Events[keyA][keyB]
-          r = true
-        }
-      })
-    })
-    return r
   }
-  return true
+  return dest
 }
 
-/**
- * 事件监听（只触发一次）
- * @param eventName
- * @param callback
- * @param context
- * @returns {(*|*)[]}
- */
-Observable.prototype.once = function (eventName, callback, context) {
-  return (this.bindEvent(eventName, callback, 1, context))
-}
-
-/**
- * 响应事件
- * @param eventName
- * @param args
- */
-Observable.prototype.action = function (eventName, args) {
-  if (Observable.hasOwnKey(this.Events, eventName)) {
-    this.eachEvent(this.Events[eventName], (key, item) => {
-      item[0].apply(item[2], args)
-      if (item[1]) {
-        delete this.Events[eventName][key]
+class Observable {
+  /**
+   * Register a handler function to be called whenever this event is dispatch.
+   * @param events
+   * @param callback
+   * @param context
+   * @returns {Observable}
+   */
+  on (events, callback, context) {
+    if (!events || !callback) { // when no event listeners or callback, return this
+      return this
+    }
+    if (typeof events === 'object') {
+      for (const type in events) {
+        this._on(type, events[type], callback)
       }
+    } else {
+      // events can be a string of space-separated words
+      const _events = _trim(events).split(/\s+/)
+      for (let i = 0, len = _events.length; i < len; i++) {
+        this._on(_events[i], callback, context)
+      }
+    }
+    return this
+  }
+
+  /**
+   * Removes a previously added listener function. If no function is specified, it will remove all the listeners
+   * @param events
+   * @param callback
+   * @param context
+   * @returns {Observable}
+   */
+  un (events, callback, context) {
+    if (!events) {
+      // clear all listeners if called without arguments
+      delete this._events
+    } else if (typeof events === 'object') {
+      for (const type in events) {
+        this._un(type, events[type], callback)
+      }
+    } else {
+      const _events = _trim(events).split(/\s+/)
+      for (let i = 0, len = _events.length; i < len; i++) {
+        this._un(_events[i], callback, context)
+      }
+    }
+    return this
+  }
+
+  /**
+   * Alias for [on]{@link Observable.on}
+   * @returns {*}
+   */
+  addEventListener () {
+    return this.on.apply(this, arguments)
+  }
+
+  /**
+   * Alias for [off]{@link Observable.un}
+   * @returns {*}
+   */
+  removeEventListener () {
+    return this.un.apply(this, arguments)
+  }
+
+  /**
+   * Same as on, except the listener will only get dispatch once and then removed.
+   * @param events
+   * @param callback
+   * @param context
+   * @returns {Observable}
+   */
+  once (events, callback, context) {
+    if (!events || !callback) { // when no event listeners or callback, return this
+      return this
+    }
+    if (typeof events === 'object') {
+      for (const type in events) {
+        this.once(type, events[type], callback)
+      }
+      return this
+    }
+    let handler = () => {
+      this.un(events, callback, context).un(events, handler, context)
+    }
+    // add a listener that's executed once and removed after that
+    return this.on(events, callback, context).on(events, handler, context)
+  }
+
+  /**
+   * Register internal
+   * @param event
+   * @param callback
+   * @param context
+   * @private
+   */
+  _on (event, callback, context) {
+    this._events = this._events || {}
+    let _listeners = this._events[event]
+    if (!_listeners) {
+      _listeners = []
+      this._events[event] = _listeners
+    }
+    if (context === this) {
+      // Less memory footprint.
+      context = undefined
+    }
+    let newListener = {
+      handler: callback,
+      context: context
+    }
+    let listeners = _listeners
+    // check if handler already there
+    for (let i = 0, len = listeners.length; i < len; i++) {
+      if (listeners[i].handler === callback && listeners[i].context === context) {
+        return this
+      }
+    }
+    listeners.push(newListener)
+  }
+
+  /**
+   * un internal
+   * @param event
+   * @param callback
+   * @param context
+   * @private
+   */
+  _un (event, callback, context) {
+    let [listeners, i, len] = []
+    if (!this._events) { return }
+    listeners = this._events[event]
+    if (!listeners) {
+      return
+    }
+    if (!callback) {
+      // Set all removed listeners to noop so they are not called if remove happens in fire
+      for (i = 0, len = listeners.length; i < len; i++) {
+        listeners[i].callback = function () { return false }
+      }
+      // clear all listeners for a type if function isn't specified
+      delete this._events[event]
+      return
+    }
+    if (context === this) {
+      context = undefined
+    }
+    if (listeners) {
+      // find handler and remove it
+      for (i = 0, len = listeners.length; i < len; i++) {
+        let $listener = listeners[i]
+        if ($listener.context !== context) { continue }
+        if ($listener.handler === callback) {
+          // set the removed listener to noop so that's not called if remove happens in fire
+          $listener.handler = function () { return false }
+          if (this._firingCount) {
+            /* copy array in case events are being fired */
+            this._events[event] = listeners = listeners.slice()
+          }
+          listeners.splice(i, 1)
+          return
+        }
+      }
+    }
+  }
+
+  /**
+   * dispatch
+   * @returns {*}
+   */
+  dispatch () {
+    return this._action.apply(this, arguments)
+  }
+
+  /**
+   * dispatchSync
+   * @returns {Observable}
+   */
+  dispatchSync () {
+    setTimeout(() => {
+      this._action.apply(this, arguments)
     })
+    return this
   }
-}
 
-/**
- * 延后触发响应
- * @param eventName
- */
-Observable.prototype.dispatchSync = function (eventName) {
-  const args = Observable.slice(arguments, 1)
-  setTimeout(() => {
-    this.action(eventName, args)
-  })
-  return this
-}
-
-/**
- * 实时触发响应
- * @param eventName
- */
-Observable.prototype.dispatch = function (eventName) {
-  this.action(eventName, Observable.slice(arguments, 1))
-  return this
-}
-
-/**
- * 清空发布中心
- */
-Observable.prototype.clear = function () {
-  this.Events = {}
-}
-
-/**
- * 绑定事件
- * @param eventName
- * @param callback
- * @param isOne
- * @param context
- * @returns {[*,*]}
- */
-Observable.prototype.bindEvent = function (eventName, callback, isOne, context) {
-  if (typeof eventName !== 'string' || typeof callback !== 'function') {
-    throw new Error('传入的事件名称和回调函数有误！')
+  /**
+   * action internal
+   * @param type
+   * @param data
+   * @param propagate
+   * @returns {Observable}
+   * @private
+   */
+  _action (type, data, propagate) {
+    if (!this.listens(type, propagate)) { return this }
+    let event = {
+      type: type,
+      target: this
+    }
+    if (this._events) {
+      let listeners = this._events[type]
+      if (listeners) {
+        this._firingCount = (this._firingCount + 1) || 1
+        for (let i = 0, len = listeners.length; i < len; i++) {
+          let $listener = listeners[i]
+          $listener.handler.call($listener.context || this, event, data)
+        }
+        this._firingCount--
+      }
+    }
+    if (propagate) {
+      // propagate the event to parents (set with addEventParent)
+      this._propagateEvent(event)
+    }
+    return this
   }
-  if (!Observable.hasOwnKey(this.Events, eventName)) {
-    this.Events[eventName] = {}
-  }
-  this.Events[eventName][++this.__cnt] = [callback, isOne, context]
-  return [eventName, this.__cnt]
-}
 
-/**
- * 循环触发事件
- * @param obj
- * @param callback
- */
-Observable.prototype.eachEvent = function (obj, callback) {
-  for (let key in obj) {
-    if (Observable.hasOwnKey(obj, key)) {
-      callback(key, obj[key])
+  /**
+   * Returns `true` if a particular event type has any listeners attached to it.
+   * @param type
+   * @param propagate
+   * @returns {boolean}
+   */
+  listens (type, propagate) {
+    let listeners = this._events && this._events[type]
+    if (listeners && listeners.length) { return true }
+    if (propagate) {
+      // also check parents for listeners if event propagates
+      for (const id in this._eventParents) {
+        if (this._eventParents[id].listens(type, propagate)) { return true }
+      }
+    }
+    return false
+  }
+
+  /**
+   * Adds an event parent - an `Evented` that will receive propagated events
+   * @param obj
+   * @returns {Observable}
+   */
+  addEventParent (obj) {
+    this._eventParents = this._eventParents || {}
+    this._eventParents[uuidv5(obj, '8dc079dd-0313-4563-864f-008eb45bf87f')] = obj
+    return this
+  }
+
+  /**
+   * Removes an event parent, so it will stop receiving propagated events
+   * @param obj
+   * @returns {Observable}
+   */
+  removeEventParent (obj) {
+    if (this._eventParents) {
+      delete this._eventParents[uuidv5(obj, '8dc079dd-0313-4563-864f-008eb45bf87f')]
+    }
+    return this
+  }
+
+  _propagateEvent (e) {
+    for (const id in this._eventParents) {
+      this._eventParents[id].dispatch(e.type, _extend({
+        layer: e.target,
+        propagatedFrom: e.target
+      }, e), true)
     }
   }
 }

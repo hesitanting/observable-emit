@@ -5,7 +5,10 @@ const buble = require('rollup-plugin-buble'); // ES2015 tran
 const cjs = require('rollup-plugin-commonjs');
 const node = require('rollup-plugin-node-resolve');
 const replace = require('rollup-plugin-replace');
+const eslint = require('rollup-plugin-eslint');
+const friendlyFormatter = require("eslint-friendly-formatter");
 const _package = require('../package.json')
+const eslintConfig = require('../.eslintrc')
 const year = new Date().getFullYear();
 const banner = `/*!\n * ${_package.name} v${_package.version}\n * LICENSE : ${_package.license}\n * (c) 2017-${year} ${_package.homepage}\n */`;
 
@@ -16,6 +19,7 @@ const genConfig = (opts) => {
     input: {
       input: resolve('src/index.js'),
       plugins: [
+        eslint((eslintConfig => eslintConfig.formatter = friendlyFormatter)(eslintConfig)),
         node(),
         cjs(),
         buble()

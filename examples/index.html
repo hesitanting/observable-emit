@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+<body>
+<button onclick="addListener()">添加</button>
+<button onclick="reListener()">移除</button>
+<button onclick="actionListener()">触发</button>
+<script src="../dist/observable.js"></script>
+<script type="text/javascript">
+  var Listener = new Observable()
+
+  var handle = function (event, value) {
+    console.log(event, value)
+  }
+
+  function addListener () {
+    Listener.on('test', handle)
+  }
+  function reListener () {
+    Listener.un('test', handle)
+  }
+  function actionListener () {
+    Listener.dispatch('test', {
+      name: 11
+    })
+  }
+</script>
+</body>
+</html>

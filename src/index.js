@@ -1,15 +1,22 @@
 /**
- * Stop browser event propagation
- * @param  {Event} e - browser event.
- * @memberOf DomUtil
+ * Created by FDD on 2017/11/24.
+ * @desc input
  */
-const stopPropagation = function (e) {
-  if (e.stopPropagation) {
-    e.stopPropagation()
-  } else {
-    e.cancelBubble = true
+import uuidv5 from 'uuid/v5'
+
+const _trim = str => {
+  return str.trim ? str.trim() : str.replace(/^\s+|\s+$/g, '')
+}
+
+const _bind = (fn, obj) => {
+  let slice = Array.prototype.slice
+  if (fn.bind) {
+    return fn.bind.apply(fn, slice.call(arguments, 1))
   }
-  return this
+  let args = slice.call(arguments, 2)
+  return function () {
+    return fn.apply(obj, args.length ? args.concat(slice.call(arguments)) : arguments)
+  }
 }
 
 /**
@@ -19,7 +26,7 @@ const stopPropagation = function (e) {
  * @return {Object}
  * @memberOf Util
  */
-const extend = function (dest) { // (Object[, Object, ...]) ->
+const _extend = function (dest) { // (Object[, Object, ...]) ->
   for (let i = 1; i < arguments.length; i++) {
     const src = arguments[i]
     for (const k in src) {
@@ -31,53 +38,56 @@ const extend = function (dest) { // (Object[, Object, ...]) ->
 
 class Observable {
   /**
-   * Register a handler function to be called whenever this event is fired.
+   * Register a handler function to be called whenever this event is dispatch.
    * @param events
-   * @param handler
+   * @param callback
    * @param context
-   * @returns {*}
+   * @returns {Observable}
    */
-  on (events, handler, context) {
-    if (!events || !handler) {
+  on (events, callback, context) {
+    if (!events || !callback) { // when no event listeners or callback, return this
       return this
     }
-    if (!(typeof events === 'string')) {
-      return this._switch('on', events, handler)
-    }
-    if (!this._eventMap) {
-      this._eventMap = {}
-    }
-    const eventTypes = events.toLowerCase().split(' ')
-    let evtType
-    if (!context) {
-      context = this
-    }
-    let handlerChain
-    for (let ii = 0, ll = eventTypes.length; ii < ll; ii++) {
-      evtType = eventTypes[ii]
-      handlerChain = this._eventMap[evtType]
-      if (!handlerChain) {
-        handlerChain = []
-        this._eventMap[evtType] = handlerChain
+    if (typeof events === 'object') {
+      for (const type in events) {
+        this._on(type, events[type], callback)
       }
-      const l = handlerChain.length
-      if (l > 0) {
-        for (let i = 0; i < l; i++) {
-          if (handler === handlerChain[i].handler && handlerChain[i].context === context) {
-            return this
-          }
-        }
+    } else {
+      // events can be a string of space-separated words
+      const _events = _trim(events).split(/\s+/)
+      for (let i = 0, len = _events.length; i < len; i++) {
+        this._on(_events[i], callback, context)
       }
-      handlerChain.push({
-        handler: handler,
-        context: context
-      })
     }
     return this
   }
 
   /**
-   * Alias for [on]{@link Eventable.on}
+   * Removes a previously added listener function. If no function is specified, it will remove all the listeners
+   * @param events
+   * @param callback
+   * @param context
+   * @returns {Observable}
+   */
+  un (events, callback, context) {
+    if (!events) {
+      // clear all listeners if called without arguments
+      delete this._events
+    } else if (typeof events === 'object') {
+      for (const type in events) {
+        this._un(type, events[type], callback)
+      }
+    } else {
+      const _events = _trim(events).split(/\s+/)
+      for (let i = 0, len = _events.length; i < len; i++) {
+        this._un(_events[i], callback, context)
+      }
+    }
+    return this
+  }
+
+  /**
+   * Alias for [on]{@link Observable.on}
    * @returns {*}
    */
   addEventListener () {
@@ -85,230 +95,213 @@ class Observable {
   }
 
   /**
-   * Same as on, except the listener will only get fired once and then removed.
-   * @param eventTypes
-   * @param handler
-   * @param context
-   * @returns {*}
-   */
-  once (eventTypes, handler, context) {
-    if (!(typeof eventTypes === 'string')) {
-      const once = {}
-      for (const p in eventTypes) {
-        if (eventTypes.hasOwnProperty(p)) {
-          once[p] = this._wrapOnceHandler(p, eventTypes[p], context)
-        }
-      }
-      return this._switch('on', once)
-    }
-    const evetTypes = eventTypes.split(' ')
-    for (let i = 0, l = evetTypes.length; i < l; i++) {
-      this.on(evetTypes[i], this._wrapOnceHandler(evetTypes[i], handler, context))
-    }
-    return this
-  }
-
-  /**
-   * Unregister the event handler for the specified event types.
-   * @param eventsOff
-   * @param handler
-   * @param context
-   * @returns {*}
-   */
-  off (eventsOff, handler, context) {
-    if (!eventsOff || !this._eventMap || !handler) {
-      return this
-    }
-    if (!(typeof eventsOff === 'string')) {
-      return this._switch('off', eventsOff, handler)
-    }
-    const eventTypes = eventsOff.split(' ')
-    let eventType, listeners, wrapKey
-    if (!context) {
-      context = this
-    }
-    for (let j = 0, jl = eventTypes.length; j < jl; j++) {
-      eventType = eventTypes[j].toLowerCase()
-      wrapKey = 'Z__' + eventType
-      listeners = this._eventMap[eventType]
-      if (!listeners) {
-        return this
-      }
-      for (let i = listeners.length - 1; i >= 0; i--) {
-        const listener = listeners[i]
-        if ((handler === listener.handler || handler === listener.handler[wrapKey]) && listener.context === context) {
-          delete listener.handler[wrapKey]
-          listeners.splice(i, 1)
-        }
-      }
-    }
-    return this
-  }
-
-  /**
-   * Alias for [off]{@link Eventable.off}
+   * Alias for [off]{@link Observable.un}
    * @returns {*}
    */
   removeEventListener () {
-    return this.off.apply(this, arguments)
+    return this.un.apply(this, arguments)
   }
 
   /**
-   * Returns listener's count registered for the event type.
-   * @param eventType
-   * @param handler
+   * Same as on, except the listener will only get dispatch once and then removed.
+   * @param events
+   * @param callback
    * @param context
-   * @returns {number}
+   * @returns {Observable}
    */
-  listens (eventType, handler, context) {
-    if (!this._eventMap || !(typeof eventType === 'string')) {
-      return 0
-    }
-    const handlerChain = this._eventMap[eventType.toLowerCase()]
-    if (!handlerChain || !handlerChain.length) {
-      return 0
-    }
-    let count = 0
-    for (let i = 0, len = handlerChain.length; i < len; i++) {
-      if (handler) {
-        if (handler === handlerChain[i].handler &&
-          (!context || handlerChain[i].context === context)) {
-          return 1
-        }
-      } else {
-        count++
-      }
-    }
-    return count
-  }
-
-  /**
-   * Copy all the event listener to the target object
-   * @param target
-   */
-  copyEventListeners (target) {
-    const eventMap = target._eventMap
-    if (!eventMap) {
+  once (events, callback, context) {
+    if (!events || !callback) { // when no event listeners or callback, return this
       return this
     }
-    let handlerChain
-    for (const eventType in eventMap) {
-      handlerChain = eventMap[eventType]
-      for (let i = 0, len = handlerChain.length; i < len; i++) {
-        this.on(eventType, handlerChain[i].handler, handlerChain[i].context)
+    if (typeof events === 'object') {
+      for (const type in events) {
+        this.once(type, events[type], callback)
       }
+      return this
     }
-    return this
+    let handler = _bind(function () {
+      this.un(events, callback, context).un(events, handler, context)
+    }, this)
+    // add a listener that's executed once and removed after that
+    return this.on(events, callback, context).on(events, handler, context)
   }
 
   /**
-   * Fire an event, causing all handlers for that event name to run.
+   * Register internal
+   * @param event
+   * @param callback
+   * @param context
+   * @private
+   */
+  _on (event, callback, context) {
+    this._events = this._events || {}
+    let _listeners = this._events[event]
+    if (!_listeners) {
+      _listeners = []
+      this._events[event] = _listeners
+    }
+    if (context === this) {
+      // Less memory footprint.
+      context = undefined
+    }
+    let newListener = {
+      handler: callback,
+      context: context
+    }
+    let listeners = _listeners
+    // check if handler already there
+    for (let i = 0, len = listeners.length; i < len; i++) {
+      if (listeners[i].handler === callback && listeners[i].context === context) {
+        return this
+      }
+    }
+    listeners.push(newListener)
+  }
+
+  /**
+   * un internal
+   * @param event
+   * @param callback
+   * @param context
+   * @private
+   */
+  _un (event, callback, context) {
+    let [listeners, i, len] = []
+    if (!this._events) { return }
+    listeners = this._events[event]
+    if (!listeners) {
+      return
+    }
+    if (!callback) {
+      // Set all removed listeners to noop so they are not called if remove happens in fire
+      for (i = 0, len = listeners.length; i < len; i++) {
+        listeners[i].callback = function () { return false }
+      }
+      // clear all listeners for a type if function isn't specified
+      delete this._events[event]
+      return
+    }
+    if (context === this) {
+      context = undefined
+    }
+    if (listeners) {
+      // find handler and remove it
+      for (i = 0, len = listeners.length; i < len; i++) {
+        let $listener = listeners[i]
+        if ($listener.context !== context) { continue }
+        if ($listener.handler === callback) {
+          // set the removed listener to noop so that's not called if remove happens in fire
+          $listener.handler = function () { return false }
+          if (this._firingCount) {
+            /* copy array in case events are being fired */
+            this._events[event] = listeners = listeners.slice()
+          }
+          listeners.splice(i, 1)
+          return
+        }
+      }
+    }
+  }
+
+  /**
+   * dispatch
    * @returns {*}
    */
-  fire () {
-    if (this._eventParent) {
-      return this._eventParent.fire.apply(this._eventParent, arguments)
-    }
-    return this._fire.apply(this, arguments)
-  }
-
-  _wrapOnceHandler (evtType, handler, context) {
-    const me = this
-    const key = 'Z__' + evtType
-    let called = false
-    const fn = function onceHandler () {
-      if (called) {
-        return
-      }
-      delete fn[key]
-      called = true
-      if (context) {
-        handler.apply(context, arguments)
-      } else {
-        handler.apply(this, arguments)
-      }
-      me.off(evtType, onceHandler, this)
-    }
-    fn[key] = handler
-    return fn
-  }
-
-  _switch (to, eventKeys, context) {
-    for (const p in eventKeys) {
-      if (eventKeys.hasOwnProperty(p)) {
-        this[to](p, eventKeys[p], context)
-      }
-    }
-    return this
-  }
-
-  _clearListeners (eventType) {
-    if (!this._eventMap || !(typeof eventType === 'string')) {
-      return
-    }
-    const handlerChain = this._eventMap[eventType.toLowerCase()]
-    if (!handlerChain) {
-      return
-    }
-    this._eventMap[eventType] = null
-  }
-
-  _clearAllListeners () {
-    this._eventMap = null
+  dispatch () {
+    return this._action.apply(this, arguments)
   }
 
   /**
-   * Set a event parent to handle all the events
-   * @param parent
-   * @private
+   * dispatchSync
+   * @returns {Observable}
    */
-  _setEventParent (parent) {
-    this._eventParent = parent
+  dispatchSync () {
+    setTimeout(() => {
+      this._action.apply(this, arguments)
+    })
     return this
   }
 
   /**
-   * fire inter
-   * @param eventType
-   * @param param
+   * action internal
+   * @param type
+   * @param data
+   * @param propagate
+   * @returns {Observable}
    * @private
    */
-  _fire (eventType, param) {
-    if (!this._eventMap) {
-      return this
+  _action (type, data, propagate) {
+    if (!this.listens(type, propagate)) { return this }
+    let event = {
+      type: type,
+      target: this
     }
-    const handlerChain = this._eventMap[eventType.toLowerCase()]
-    if (!handlerChain) {
-      return this
-    }
-    if (!param) {
-      param = {}
-    }
-    param['type'] = eventType
-    param['target'] = this
-    // in case of deleting a listener in a execution, copy the handlerChain to execute.
-    const queue = handlerChain.slice(0)
-    let context, bubble, passed
-    for (let i = 0, len = queue.length; i < len; i++) {
-      if (!queue[i]) {
-        continue
-      }
-      context = queue[i].context
-      bubble = true
-      passed = extend({}, param)
-      if (context) {
-        bubble = queue[i].handler.call(context, passed)
-      } else {
-        bubble = queue[i].handler(passed)
-      }
-      // stops the event propagation if the handler returns false.
-      if (bubble === false) {
-        if (param['domEvent']) {
-          stopPropagation(param['domEvent'])
+    if (this._events) {
+      let listeners = this._events[type]
+      if (listeners) {
+        this._firingCount = (this._firingCount + 1) || 1
+        for (let i = 0, len = listeners.length; i < len; i++) {
+          let $listener = listeners[i]
+          $listener.handler.call($listener.context || this, event, data)
         }
+        this._firingCount--
       }
     }
+    if (propagate) {
+      // propagate the event to parents (set with addEventParent)
+      this._propagateEvent(event)
+    }
     return this
+  }
+
+  /**
+   * Returns `true` if a particular event type has any listeners attached to it.
+   * @param type
+   * @param propagate
+   * @returns {boolean}
+   */
+  listens (type, propagate) {
+    let listeners = this._events && this._events[type]
+    if (listeners && listeners.length) { return true }
+    if (propagate) {
+      // also check parents for listeners if event propagates
+      for (const id in this._eventParents) {
+        if (this._eventParents[id].listens(type, propagate)) { return true }
+      }
+    }
+    return false
+  }
+
+  /**
+   * Adds an event parent - an `Evented` that will receive propagated events
+   * @param obj
+   * @returns {Observable}
+   */
+  addEventParent (obj) {
+    this._eventParents = this._eventParents || {}
+    this._eventParents[uuidv5(obj, 'event-parents')] = obj
+    return this
+  }
+
+  /**
+   * Removes an event parent, so it will stop receiving propagated events
+   * @param obj
+   * @returns {Observable}
+   */
+  removeEventParent (obj) {
+    if (this._eventParents) {
+      delete this._eventParents[uuidv5(obj, 'event-parents')]
+    }
+    return this
+  }
+
+  _propagateEvent (e) {
+    for (const id in this._eventParents) {
+      this._eventParents[id].dispatch(e.type, _extend({
+        layer: e.target,
+        propagatedFrom: e.target
+      }, e), true)
+    }
   }
 }
 

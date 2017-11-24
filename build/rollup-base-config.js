@@ -19,7 +19,7 @@ const genConfig = (opts) => {
     input: {
       input: resolve('src/index.js'),
       plugins: [
-        eslint(_eslintConfig => _eslintConfig.formatter = friendlyFormatter),
+        eslint((eslintConfig => eslintConfig.formatter = friendlyFormatter)(eslintConfig)),
         node(),
         cjs(),
         buble()

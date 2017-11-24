@@ -29,22 +29,7 @@ const extend = function (dest) { // (Object[, Object, ...]) ->
   return dest
 }
 
-class Class {
-  setOptions (options) {
-    if (!this.hasOwnProperty('options')) {
-      this.options = this.options ? Object.create(this.options) : {}
-    }
-    if (!options) {
-      return this
-    }
-    for (const i in options) {
-      this.options[i] = options[i]
-    }
-    return this
-  }
-}
-
-const Eventable = Base => class extends Base {
+class Observable {
   /**
    * Register a handler function to be called whenever this event is fired.
    * @param events
@@ -324,17 +309,6 @@ const Eventable = Base => class extends Base {
       }
     }
     return this
-  }
-}
-
-class Observable extends Eventable(Class) {
-  constructor (options) {
-    super(options)
-    this.options = options
-  }
-
-  getOptions () {
-    return this.options
   }
 }
 

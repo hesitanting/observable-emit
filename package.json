@@ -27,7 +27,8 @@
     "build": "node build/rollup-prod-config.js",
     "karma.test": "karma start build/karma.test.config.js",
     "karma.cover": "karma start build/karma.cover.config.js",
-    "karma.tdd": "karma start build/karma.tdd.config.js"
+    "karma.tdd": "karma start build/karma.tdd.config.js",
+    "report-coverage": "codecov -t 1711091d-75f1-4a5b-ab6f-306617d79da9"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",

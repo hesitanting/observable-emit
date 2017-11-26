@@ -4,7 +4,7 @@
   "description": "javascript emit events",
   "author": "FDD <smileFDD@gmail.com>",
   "homepage": "https://github.com/sakitam-fdd/observable-emit",
-  "private": true,
+  "private": false,
   "main": "dist/observable.common.js",
   "module": "dist/observable.esm.js",
   "unpkg": "dist/observable.js",
